@@ -1,0 +1,591 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Pillar 0: Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Primitive Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'skyangelo340@gmail.com';
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidSkillId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 64 && id.matches('^[a-z0-9_\\-]+$');
+    }
+
+    function isDemoPeerId(id) {
+      return id is string && id.matches('^demo_peer_[0-9]{2}$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidStringList(arr, maxLen) {
+      return arr is list && arr.size() <= maxLen && (arr.size() == 0 || (arr[0] is string && arr[0].size() <= 40));
+    }
+
+    // --- Validation Blueprints (Pillar 2: Anti-Update-Gap) ---
+    function isValidPublicProfile(data) {
+      return data.keys().hasAll([
+          'uid', 'displayName', 'bio', 'photoUrl', 'useGooglePhoto',
+          'status', 'visibility', 'languages', 'timezone', 'availability',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'displayName', 'bio', 'photoUrl', 'useGooglePhoto',
+          'status', 'visibility', 'languages', 'timezone', 'availability',
+          'createdAt', 'updatedAt'
+        ])
+        && data.uid is string
+        && (data.uid == request.auth.uid || (isAdmin() && isDemoPeerId(data.uid)))
+        && isValidId(data.uid)
+        && data.displayName is string && data.displayName.size() >= 2 && data.displayName.size() <= 60
+        && data.bio is string && data.bio.size() <= 400
+        && data.photoUrl is string && data.photoUrl.size() <= 500
+        && data.useGooglePhoto is bool
+        && data.status in ['active', 'paused']
+        && data.visibility in ['visible', 'hidden']
+        && isValidStringList(data.languages, 8)
+        && data.timezone is string && data.timezone.size() >= 1 && data.timezone.size() <= 80
+        && data.availability is string && data.availability.size() <= 120
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidPrivateUser(data) {
+      return data.keys().hasAll([
+          'uid', 'email', 'ageConfirmed18Plus', 'termsAccepted',
+          'onboardingComplete', 'notificationsEnabled', 'reducedMotion',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'email', 'ageConfirmed18Plus', 'termsAccepted',
+          'onboardingComplete', 'notificationsEnabled', 'reducedMotion',
+          'createdAt', 'updatedAt'
+        ])
+        && data.uid is string && data.uid == request.auth.uid && isValidId(data.uid)
+        && data.email is string && data.email.size() <= 160
+        && data.ageConfirmed18Plus is bool
+        && data.termsAccepted is bool
+        && data.onboardingComplete is bool
+        && data.notificationsEnabled is bool
+        && data.reducedMotion is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSkillCatalogItem(data) {
+      return data.keys().hasAll(['skillId', 'name', 'category', 'active', 'tags'])
+        && data.keys().hasOnly(['skillId', 'name', 'category', 'active', 'tags'])
+        && isValidSkillId(data.skillId)
+        && data.name is string && data.name.size() >= 2 && data.name.size() <= 60
+        && data.category is string && data.category.size() >= 2 && data.category.size() <= 40
+        && data.active is bool
+        && isValidStringList(data.tags, 10);
+    }
+
+    function isValidUserSkill(data) {
+      return data.keys().hasAll([
+          'uid', 'skillId', 'skillName', 'role', 'level', 'description',
+          'availability', 'languages', 'timezone', 'displayName',
+          'photoUrl', 'bio', 'visible', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'skillId', 'skillName', 'role', 'level', 'description',
+          'availability', 'languages', 'timezone', 'displayName',
+          'photoUrl', 'bio', 'visible', 'createdAt', 'updatedAt'
+        ])
+        && data.uid is string
+        && (data.uid == request.auth.uid || (isAdmin() && isDemoPeerId(data.uid)))
+        && isValidId(data.uid)
+        && isValidSkillId(data.skillId)
+        && data.skillName is string && data.skillName.size() >= 2 && data.skillName.size() <= 60
+        && data.role in ['learner', 'mentor']
+        && data.level in ['beginner', 'intermediate', 'advanced']
+        && data.description is string && data.description.size() <= 350
+        && data.availability is string && data.availability.size() <= 120
+        && isValidStringList(data.languages, 8)
+        && data.timezone is string && data.timezone.size() >= 1 && data.timezone.size() <= 80
+        && data.displayName is string && data.displayName.size() >= 2 && data.displayName.size() <= 60
+        && data.photoUrl is string && data.photoUrl.size() <= 500
+        && data.bio is string && data.bio.size() <= 400
+        && data.visible is bool
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidSwipe(data) {
+      return data.keys().hasAll(['actorUid', 'targetUid', 'skillId', 'skillName', 'decision', 'createdAt'])
+        && data.keys().hasOnly(['actorUid', 'targetUid', 'skillId', 'skillName', 'decision', 'createdAt'])
+        && data.actorUid is string
+        && (data.actorUid == request.auth.uid || (isAdmin() && isDemoPeerId(data.actorUid)))
+        && isValidId(data.actorUid)
+        && data.targetUid is string && isValidId(data.targetUid) && data.targetUid != data.actorUid
+        && isValidSkillId(data.skillId)
+        && data.skillName is string && data.skillName.size() >= 1 && data.skillName.size() <= 60
+        && data.decision in ['like', 'pass']
+        && data.createdAt is timestamp;
+    }
+
+    function canonicalMatchId(uidA, uidB) {
+      return uidA < uidB ? uidA + '_' + uidB : uidB + '_' + uidA;
+    }
+
+    function isValidMatch(data) {
+      return data.keys().hasAll([
+          'matchId', 'participantIds', 'user1Uid', 'user2Uid',
+          'user1Name', 'user2Name', 'user1SkillName', 'user2SkillName',
+          'skillSwapLabel', 'status', 'lastMessageText', 'lastMessageSenderUid',
+          'lastMessageAt', 'user1UnreadCount', 'user2UnreadCount',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'matchId', 'participantIds', 'user1Uid', 'user2Uid',
+          'user1Name', 'user2Name', 'user1SkillName', 'user2SkillName',
+          'skillSwapLabel', 'status', 'lastMessageText', 'lastMessageSenderUid',
+          'lastMessageAt', 'user1UnreadCount', 'user2UnreadCount',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.matchId)
+        && data.participantIds is list && data.participantIds.size() == 2
+        && data.participantIds[0] is string && data.participantIds[1] is string
+        && data.participantIds[0] < data.participantIds[1]
+        && isValidId(data.user1Uid) && isValidId(data.user2Uid)
+        && data.user1Uid == data.participantIds[0]
+        && data.user2Uid == data.participantIds[1]
+        && data.user1Uid < data.user2Uid
+        && data.user1Name is string && data.user1Name.size() >= 1 && data.user1Name.size() <= 60
+        && data.user2Name is string && data.user2Name.size() >= 1 && data.user2Name.size() <= 60
+        && data.user1SkillName is string && data.user1SkillName.size() >= 1 && data.user1SkillName.size() <= 60
+        && data.user2SkillName is string && data.user2SkillName.size() >= 1 && data.user2SkillName.size() <= 60
+        && data.skillSwapLabel is string && data.skillSwapLabel.size() >= 2 && data.skillSwapLabel.size() <= 130
+        && data.matchId == canonicalMatchId(data.user1Uid, data.user2Uid)
+        && data.status in ['active', 'unmatched', 'blocked']
+        && data.lastMessageText is string && data.lastMessageText.size() <= 200
+        && data.lastMessageSenderUid is string && data.lastMessageSenderUid.size() <= 128
+        && data.lastMessageAt is timestamp
+        && data.user1UnreadCount is int && data.user1UnreadCount >= 0 && data.user1UnreadCount <= 10000
+        && data.user2UnreadCount is int && data.user2UnreadCount >= 0 && data.user2UnreadCount <= 10000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidChatMessage(data) {
+      return data.keys().hasAll(['messageId', 'senderUid', 'text', 'type', 'clientNonce', 'createdAt'])
+        && data.keys().hasOnly(['messageId', 'senderUid', 'text', 'type', 'clientNonce', 'createdAt'])
+        && isValidId(data.messageId)
+        && data.senderUid is string && data.senderUid == request.auth.uid && isValidId(data.senderUid)
+        && data.text is string && data.text.size() >= 1 && data.text.size() <= 1000
+        && data.type == 'text'
+        && data.clientNonce is string && data.clientNonce.size() >= 1 && data.clientNonce.size() <= 80
+        && data.createdAt is timestamp;
+    }
+
+    function isValidVideoCall(data) {
+      return data.keys().hasAll([
+          'callId', 'matchId', 'skillId', 'skillName',
+          'initiatorUid', 'initiatorName', 'recipientUid', 'recipientName',
+          'participantIds', 'status', 'offerSdp', 'answerSdp',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'callId', 'matchId', 'skillId', 'skillName',
+          'initiatorUid', 'initiatorName', 'recipientUid', 'recipientName',
+          'participantIds', 'status', 'offerSdp', 'answerSdp',
+          'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.callId)
+        && isValidId(data.matchId)
+        && isValidSkillId(data.skillId)
+        && data.skillName is string && data.skillName.size() >= 2 && data.skillName.size() <= 60
+        && isValidId(data.initiatorUid) && isValidId(data.recipientUid)
+        && data.initiatorUid != data.recipientUid
+        && data.initiatorName is string && data.initiatorName.size() >= 1 && data.initiatorName.size() <= 60
+        && data.recipientName is string && data.recipientName.size() >= 1 && data.recipientName.size() <= 60
+        && data.participantIds is list && data.participantIds.size() == 2
+        && data.initiatorUid in data.participantIds && data.recipientUid in data.participantIds
+        && data.status in ['ringing', 'accepted', 'connecting', 'active', 'declined', 'ended', 'timeout', 'busy', 'failed']
+        && data.offerSdp is string && data.offerSdp.size() <= 16000
+        && data.answerSdp is string && data.answerSdp.size() <= 16000
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidCallSignal(data) {
+      return data.keys().hasAll(['fromUid', 'kind', 'payload', 'createdAt'])
+        && data.keys().hasOnly(['fromUid', 'kind', 'payload', 'createdAt'])
+        && data.fromUid is string && data.fromUid == request.auth.uid && isValidId(data.fromUid)
+        && data.kind == 'ice'
+        && data.payload is string && data.payload.size() >= 1 && data.payload.size() <= 4000
+        && data.createdAt is timestamp;
+    }
+
+    function isValidBlockRecord(data) {
+      return data.keys().hasAll(['blockerUid', 'blockedUid', 'blockedName', 'createdAt'])
+        && data.keys().hasOnly(['blockerUid', 'blockedUid', 'blockedName', 'createdAt'])
+        && data.blockerUid is string && data.blockerUid == request.auth.uid && isValidId(data.blockerUid)
+        && data.blockedUid is string && isValidId(data.blockedUid) && data.blockedUid != data.blockerUid
+        && data.blockedName is string && data.blockedName.size() <= 60
+        && data.createdAt is timestamp;
+    }
+
+    function isValidSafetyReport(data) {
+      return data.keys().hasAll(['reporterUid', 'targetUid', 'matchId', 'reason', 'details', 'status', 'createdAt'])
+        && data.keys().hasOnly(['reporterUid', 'targetUid', 'matchId', 'reason', 'details', 'status', 'createdAt'])
+        && data.reporterUid is string && data.reporterUid == request.auth.uid && isValidId(data.reporterUid)
+        && data.targetUid is string && isValidId(data.targetUid) && data.targetUid != data.reporterUid
+        && data.matchId is string && data.matchId.size() <= 128
+        && data.reason in ['harassment', 'inappropriate_skill', 'spam', 'underage', 'other']
+        && data.details is string && data.details.size() <= 800
+        && data.status in ['open', 'reviewed', 'resolved']
+        && data.createdAt is timestamp;
+    }
+
+    function isBlockedPair(uidA, uidB) {
+      return exists(/databases/$(database)/documents/blocks/$(uidA + '_' + uidB))
+        || exists(/databases/$(database)/documents/blocks/$(uidB + '_' + uidA));
+    }
+
+    function isActiveMatchParticipant(matchId) {
+      let matchDoc = get(/databases/$(database)/documents/matches/$(matchId));
+      return matchDoc != null
+        && matchDoc.data.status == 'active'
+        && request.auth.uid in matchDoc.data.participantIds;
+    }
+
+    // --- 1. Public Profiles (Non-PII Only) ---
+    match /publicProfiles/{uid} {
+      allow get: if isSignedIn() && isValidId(uid) && (
+        request.auth.uid == uid
+        || (isAdmin() && isDemoPeerId(uid))
+        || (resource != null && resource.data.visibility == 'visible' && resource.data.status == 'active')
+      );
+      allow list: if isSignedIn() && (
+        resource.data.uid == request.auth.uid
+        || (resource.data.visibility == 'visible' && resource.data.status == 'active')
+      );
+      allow create: if isVerifiedUser() && isValidId(uid)
+        && (request.auth.uid == uid || (isAdmin() && isDemoPeerId(uid)))
+        && isValidPublicProfile(incoming())
+        && incoming().uid == uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(uid)
+        && (request.auth.uid == uid || (isAdmin() && isDemoPeerId(uid)))
+        && isValidPublicProfile(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'displayName', 'bio', 'photoUrl', 'useGooglePhoto',
+          'status', 'visibility', 'languages', 'timezone', 'availability', 'updatedAt'
+        ]);
+      allow delete: if isVerifiedUser() && isValidId(uid) && request.auth.uid == uid;
+    }
+
+    // --- 2. Private Users (Strict PII Isolation - Owner Only) ---
+    match /privateUsers/{uid} {
+      allow get: if isSignedIn() && isValidId(uid) && request.auth.uid == uid;
+      allow list: if false;
+      allow create: if isVerifiedUser() && isValidId(uid) && request.auth.uid == uid
+        && isValidPrivateUser(incoming())
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(uid) && request.auth.uid == uid
+        && isValidPrivateUser(incoming())
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'email', 'ageConfirmed18Plus', 'termsAccepted',
+          'onboardingComplete', 'notificationsEnabled', 'reducedMotion', 'updatedAt'
+        ]);
+      allow delete: if isVerifiedUser() && isValidId(uid) && request.auth.uid == uid;
+    }
+
+    // --- 3. Skill Catalog ---
+    match /skills/{skillId} {
+      allow get: if isSignedIn() && isValidSkillId(skillId) && resource.data.active == true;
+      allow list: if isSignedIn() && resource.data.active == true;
+      allow create, update: if isAdmin() && isValidSkillId(skillId) && isValidSkillCatalogItem(incoming());
+      allow delete: if isAdmin() && isValidSkillId(skillId);
+    }
+
+    // --- 4. User Skills (Discoverable Offers & Requests) ---
+    match /userSkills/{userSkillId} {
+      allow get: if isSignedIn() && isValidId(userSkillId) && (
+        resource == null
+        || resource.data.uid == request.auth.uid
+        || resource.data.visible == true
+      );
+      allow list: if isSignedIn() && (
+        resource.data.uid == request.auth.uid
+        || resource.data.visible == true
+      );
+      allow create: if isVerifiedUser() && isValidId(userSkillId)
+        && isValidUserSkill(incoming())
+        && (
+          userSkillId == request.auth.uid + '_' + incoming().skillId + '_' + incoming().role
+          || (isAdmin() && isDemoPeerId(incoming().uid) && userSkillId == incoming().uid + '_' + incoming().skillId + '_' + incoming().role)
+        )
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() && isValidId(userSkillId)
+        && (existing().uid == request.auth.uid || (isAdmin() && isDemoPeerId(existing().uid)))
+        && isValidUserSkill(incoming())
+        && incoming().uid == existing().uid
+        && incoming().skillId == existing().skillId
+        && incoming().role == existing().role
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'skillName', 'level', 'description', 'availability', 'languages',
+          'timezone', 'displayName', 'photoUrl', 'bio', 'visible', 'updatedAt'
+        ]);
+      allow delete: if isVerifiedUser() && isValidId(userSkillId)
+        && (existing().uid == request.auth.uid || (isAdmin() && isDemoPeerId(existing().uid)));
+    }
+
+    // --- 5. Swipes (Private Pass & Reciprocal-Only Mutual Like Verification) ---
+    match /swipes/{swipeId} {
+      allow get: if isSignedIn() && isValidId(swipeId) && (
+        resource == null
+        || resource.data.actorUid == request.auth.uid
+        || (isAdmin() && isDemoPeerId(resource.data.actorUid))
+        || (
+          resource.data.targetUid == request.auth.uid
+          && resource.data.decision == 'like'
+          && exists(/databases/$(database)/documents/swipes/$(request.auth.uid + '_' + resource.data.actorUid))
+          && get(/databases/$(database)/documents/swipes/$(request.auth.uid + '_' + resource.data.actorUid)).data.decision == 'like'
+        )
+      );
+      allow list: if isSignedIn() && resource.data.actorUid == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(swipeId)
+        && isValidSwipe(incoming())
+        && (
+          swipeId == request.auth.uid + '_' + incoming().targetUid
+          || (
+            isAdmin()
+            && isDemoPeerId(incoming().actorUid)
+            && incoming().targetUid == request.auth.uid
+            && swipeId == incoming().actorUid + '_' + incoming().targetUid
+          )
+        )
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(swipeId) && existing().actorUid == request.auth.uid;
+    }
+
+    // --- 6. Matches (Mutual Two-Way Skill Swap Canonical Engine) ---
+    match /matches/{matchId} {
+      allow get: if isSignedIn() && isValidId(matchId) && (
+        resource == null || request.auth.uid in resource.data.participantIds
+      );
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participantIds;
+      allow create: if isVerifiedUser() && isValidId(matchId)
+        && isValidMatch(incoming())
+        && matchId == incoming().matchId
+        && request.auth.uid in incoming().participantIds
+        && incoming().status == 'active'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && incoming().lastMessageAt == request.time
+        && incoming().user1UnreadCount == 0
+        && incoming().user2UnreadCount == 0
+        && !isBlockedPair(incoming().user1Uid, incoming().user2Uid)
+        && exists(/databases/$(database)/documents/swipes/$(incoming().user1Uid + '_' + incoming().user2Uid))
+        && exists(/databases/$(database)/documents/swipes/$(incoming().user2Uid + '_' + incoming().user1Uid))
+        && get(/databases/$(database)/documents/swipes/$(incoming().user1Uid + '_' + incoming().user2Uid)).data.decision == 'like'
+        && get(/databases/$(database)/documents/swipes/$(incoming().user2Uid + '_' + incoming().user1Uid)).data.decision == 'like';
+
+      allow update: if isVerifiedUser() && isValidId(matchId)
+        && isValidMatch(incoming())
+        && request.auth.uid in existing().participantIds
+        && existing().status == 'active'
+        && incoming().matchId == existing().matchId
+        && incoming().participantIds == existing().participantIds
+        && incoming().user1Uid == existing().user1Uid
+        && incoming().user2Uid == existing().user2Uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Update conversation preview & unread counters on message send
+          (
+            incoming().status == 'active'
+            && incoming().lastMessageSenderUid == request.auth.uid
+            && incoming().lastMessageAt == request.time
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'lastMessageText', 'lastMessageSenderUid', 'lastMessageAt',
+              'user1UnreadCount', 'user2UnreadCount', 'updatedAt'
+            ])
+          )
+          ||
+          // Action 2: Reset own unread counter when reading chat
+          (
+            incoming().status == 'active'
+            && (
+              (request.auth.uid == existing().user1Uid
+                && incoming().user1UnreadCount == 0
+                && incoming().diff(existing()).affectedKeys().hasOnly(['user1UnreadCount', 'updatedAt']))
+              ||
+              (request.auth.uid == existing().user2Uid
+                && incoming().user2UnreadCount == 0
+                && incoming().diff(existing()).affectedKeys().hasOnly(['user2UnreadCount', 'updatedAt']))
+            )
+          )
+          ||
+          // Action 3: Unmatch or Block (Terminal State Lock)
+          (
+            incoming().status in ['unmatched', 'blocked']
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+        );
+      allow delete: if false;
+
+      // --- 6a. Match Chat Messages (Master Gate to Parent Match) ---
+      match /messages/{messageId} {
+        allow get: if isSignedIn() && isValidId(matchId) && isValidId(messageId)
+          && isActiveMatchParticipant(matchId);
+        allow list: if isSignedIn() && isValidId(matchId)
+          && isActiveMatchParticipant(matchId);
+        allow create: if isVerifiedUser() && isValidId(matchId) && isValidId(messageId)
+          && isValidChatMessage(incoming())
+          && messageId == incoming().messageId
+          && incoming().createdAt == request.time
+          && isActiveMatchParticipant(matchId);
+        allow update, delete: if false;
+      }
+    }
+
+    // --- 7. WebRTC Video Calls (Explicit Consent & Legal State Machine) ---
+    match /calls/{callId} {
+      allow get: if isSignedIn() && isValidId(callId) && (
+        resource == null || request.auth.uid in resource.data.participantIds
+      );
+      allow list: if isSignedIn() && request.auth.uid in resource.data.participantIds;
+      allow create: if isVerifiedUser() && isValidId(callId)
+        && isValidVideoCall(incoming())
+        && callId == incoming().callId
+        && incoming().initiatorUid == request.auth.uid
+        && incoming().status == 'ringing'
+        && incoming().answerSdp == ''
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && isActiveMatchParticipant(incoming().matchId)
+        && incoming().initiatorUid in get(/databases/$(database)/documents/matches/$(incoming().matchId)).data.participantIds
+        && incoming().recipientUid in get(/databases/$(database)/documents/matches/$(incoming().matchId)).data.participantIds;
+
+      allow update: if isVerifiedUser() && isValidId(callId)
+        && isValidVideoCall(incoming())
+        && request.auth.uid in existing().participantIds
+        && !(existing().status in ['declined', 'ended', 'timeout', 'busy', 'failed'])
+        && incoming().callId == existing().callId
+        && incoming().matchId == existing().matchId
+        && incoming().initiatorUid == existing().initiatorUid
+        && incoming().recipientUid == existing().recipientUid
+        && incoming().participantIds == existing().participantIds
+        && incoming().skillId == existing().skillId
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Recipient accepts call and sets SDP answer
+          (
+            request.auth.uid == existing().recipientUid
+            && existing().status in ['ringing', 'accepted']
+            && incoming().status in ['accepted', 'connecting']
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'answerSdp', 'updatedAt'])
+          )
+          ||
+          // Action 2: Recipient declines or reports busy
+          (
+            request.auth.uid == existing().recipientUid
+            && existing().status == 'ringing'
+            && incoming().status in ['declined', 'busy']
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+          ||
+          // Action 3: Transition connecting -> active
+          (
+            existing().status in ['accepted', 'connecting']
+            && incoming().status == 'active'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+          )
+          ||
+          // Action 4: Either participant ends, times out, or marks failed (clears SDP)
+          (
+            incoming().status in ['ended', 'timeout', 'failed']
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'offerSdp', 'answerSdp', 'updatedAt'])
+          )
+        );
+      allow delete: if false;
+
+      // --- 7a. ICE Candidates Subcollection ---
+      match /signals/{signalId} {
+        allow get: if isSignedIn() && isValidId(callId) && isValidId(signalId)
+          && request.auth.uid in get(/databases/$(database)/documents/calls/$(callId)).data.participantIds;
+        allow list: if isSignedIn() && isValidId(callId)
+          && request.auth.uid in get(/databases/$(database)/documents/calls/$(callId)).data.participantIds;
+        allow create: if isVerifiedUser() && isValidId(callId) && isValidId(signalId)
+          && isValidCallSignal(incoming())
+          && incoming().createdAt == request.time
+          && request.auth.uid in get(/databases/$(database)/documents/calls/$(callId)).data.participantIds
+          && !(get(/databases/$(database)/documents/calls/$(callId)).data.status in ['declined', 'ended', 'timeout', 'busy', 'failed']);
+        allow update, delete: if false;
+      }
+    }
+
+    // --- 8. Blocks (Private Owner-Managed) ---
+    match /blocks/{blockId} {
+      allow get: if isSignedIn() && isValidId(blockId) && (
+        resource == null || resource.data.blockerUid == request.auth.uid
+      );
+      allow list: if isSignedIn() && resource.data.blockerUid == request.auth.uid;
+      allow create: if isVerifiedUser() && isValidId(blockId)
+        && isValidBlockRecord(incoming())
+        && blockId == request.auth.uid + '_' + incoming().blockedUid
+        && incoming().createdAt == request.time;
+      allow update: if false;
+      allow delete: if isVerifiedUser() && isValidId(blockId) && existing().blockerUid == request.auth.uid;
+    }
+
+    // --- 9. Safety Reports (Moderation Intake) ---
+    match /reports/{reportId} {
+      allow get: if isSignedIn() && isValidId(reportId) && (
+        resource.data.reporterUid == request.auth.uid || isAdmin()
+      );
+      allow list: if isSignedIn() && (
+        resource.data.reporterUid == request.auth.uid || isAdmin()
+      );
+      allow create: if isVerifiedUser() && isValidId(reportId)
+        && isValidSafetyReport(incoming())
+        && incoming().status == 'open'
+        && incoming().createdAt == request.time;
+      allow update: if isAdmin() && isValidId(reportId)
+        && isValidSafetyReport(incoming())
+        && incoming().reporterUid == existing().reporterUid
+        && incoming().targetUid == existing().targetUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+      allow delete: if false;
+    }
+  }
+}

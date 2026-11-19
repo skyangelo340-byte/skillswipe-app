@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" fill="none">
+  <defs>
+    <linearGradient id="bg-grad" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#7C5CFF" />
+      <stop offset="52%" stop-color="#5D3FE8" />
+      <stop offset="100%" stop-color="#3EC6A8" />
+    </linearGradient>
+    <radialGradient id="top-sheen" cx="160" cy="110" r="340" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.28" />
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0" />
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" rx="120" fill="url(#bg-grad)" />
+  <rect width="512" height="512" rx="120" fill="url(#top-sheen)" />
+  <rect x="8" y="8" width="496" height="496" rx="112" stroke="#FFFFFF" stroke-opacity="0.24" stroke-width="6" />
+  <g stroke="#FFFFFF" stroke-width="34" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M138 206H374" />
+    <path d="M312 144L374 206L312 268" />
+    <path d="M374 306H138" />
+    <path d="M200 244L138 306L200 368" />
+  </g>
+</svg>

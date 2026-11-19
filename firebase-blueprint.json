@@ -1,0 +1,660 @@
+{
+  "entities": {
+    "PublicProfile": {
+      "title": "PublicProfile",
+      "description": "Publicly visible non-PII profile information for a SkillSwipe user.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "bio": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "photoUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "useGooglePhoto": {
+          "type": "boolean"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "paused"]
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["visible", "hidden"]
+        },
+        "languages": {
+          "type": "array",
+          "description": "Spoken languages (max 8 items)."
+        },
+        "timezone": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "availability": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "displayName",
+        "bio",
+        "photoUrl",
+        "useGooglePhoto",
+        "status",
+        "visibility",
+        "languages",
+        "timezone",
+        "availability",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "PrivateUser": {
+      "title": "PrivateUser",
+      "description": "Owner-only private account data including email, 18+ age consent, terms acceptance, and preferences.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 160
+        },
+        "ageConfirmed18Plus": {
+          "type": "boolean"
+        },
+        "termsAccepted": {
+          "type": "boolean"
+        },
+        "onboardingComplete": {
+          "type": "boolean"
+        },
+        "notificationsEnabled": {
+          "type": "boolean"
+        },
+        "reducedMotion": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "email",
+        "ageConfirmed18Plus",
+        "termsAccepted",
+        "onboardingComplete",
+        "notificationsEnabled",
+        "reducedMotion",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "SkillCatalogItem": {
+      "title": "SkillCatalogItem",
+      "description": "Catalog of legitimate skills available for learning and mentoring.",
+      "type": "object",
+      "properties": {
+        "skillId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "category": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 40
+        },
+        "active": {
+          "type": "boolean"
+        },
+        "tags": {
+          "type": "array",
+          "description": "Search keywords (max 10)."
+        }
+      },
+      "required": ["skillId", "name", "category", "active", "tags"]
+    },
+    "UserSkill": {
+      "title": "UserSkill",
+      "description": "A user's specific skill offer (mentor) or learning request (learner) surfaced in Discover.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "skillId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9_\\-]+$"
+        },
+        "skillName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "role": {
+          "type": "string",
+          "enum": ["learner", "mentor"]
+        },
+        "level": {
+          "type": "string",
+          "enum": ["beginner", "intermediate", "advanced"]
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 350
+        },
+        "availability": {
+          "type": "string",
+          "maxLength": 120
+        },
+        "languages": {
+          "type": "array",
+          "description": "Spoken languages (max 8)."
+        },
+        "timezone": {
+          "type": "string",
+          "maxLength": 80
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "photoUrl": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "bio": {
+          "type": "string",
+          "maxLength": 400
+        },
+        "visible": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "uid",
+        "skillId",
+        "skillName",
+        "role",
+        "level",
+        "description",
+        "availability",
+        "languages",
+        "timezone",
+        "displayName",
+        "photoUrl",
+        "bio",
+        "visible",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "Swipe": {
+      "title": "Swipe",
+      "description": "Directional interest or pass decision on a peer's shared skill.",
+      "type": "object",
+      "properties": {
+        "actorUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "targetUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "skillId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-z0-9_\\-]+$"
+        },
+        "skillName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "decision": {
+          "type": "string",
+          "enum": ["like", "pass"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["actorUid", "targetUid", "skillId", "skillName", "decision", "createdAt"]
+    },
+    "Match": {
+      "title": "Match",
+      "description": "Deterministic canonical mutual skill-swap match between two peers who both swiped right on each other.",
+      "type": "object",
+      "properties": {
+        "matchId": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "participantIds": {
+          "type": "array",
+          "description": "Exactly two sorted UIDs."
+        },
+        "user1Uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "user2Uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "user1Name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "user2Name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "user1SkillName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "user2SkillName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "skillSwapLabel": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 130
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "unmatched", "blocked"]
+        },
+        "lastMessageText": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "lastMessageSenderUid": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "lastMessageAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "user1UnreadCount": {
+          "type": "number"
+        },
+        "user2UnreadCount": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "matchId",
+        "participantIds",
+        "user1Uid",
+        "user2Uid",
+        "user1Name",
+        "user2Name",
+        "user1SkillName",
+        "user2SkillName",
+        "skillSwapLabel",
+        "status",
+        "lastMessageText",
+        "lastMessageSenderUid",
+        "lastMessageAt",
+        "user1UnreadCount",
+        "user2UnreadCount",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "1:1 text message scoped to an active mutual match.",
+      "type": "object",
+      "properties": {
+        "messageId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "senderUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "type": {
+          "type": "string",
+          "enum": ["text"]
+        },
+        "clientNonce": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 80
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["messageId", "senderUid", "text", "type", "clientNonce", "createdAt"]
+    },
+    "VideoCall": {
+      "title": "VideoCall",
+      "description": "1:1 WebRTC video call invitation and SDP signaling state scoped to an active mutual match.",
+      "type": "object",
+      "properties": {
+        "callId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "matchId": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "skillId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "skillName": {
+          "type": "string",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "initiatorUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "initiatorName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "recipientUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "recipientName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "participantIds": {
+          "type": "array",
+          "description": "Exactly two participant UIDs."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["ringing", "accepted", "connecting", "active", "declined", "ended", "timeout", "busy", "failed"]
+        },
+        "offerSdp": {
+          "type": "string",
+          "maxLength": 16000
+        },
+        "answerSdp": {
+          "type": "string",
+          "maxLength": 16000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "callId",
+        "matchId",
+        "skillId",
+        "skillName",
+        "initiatorUid",
+        "initiatorName",
+        "recipientUid",
+        "recipientName",
+        "participantIds",
+        "status",
+        "offerSdp",
+        "answerSdp",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CallSignal": {
+      "title": "CallSignal",
+      "description": "ICE candidate signaling message exchanged between call participants.",
+      "type": "object",
+      "properties": {
+        "fromUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["ice"]
+        },
+        "payload": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["fromUid", "kind", "payload", "createdAt"]
+    },
+    "BlockRecord": {
+      "title": "BlockRecord",
+      "description": "Private user block record preventing future discovery, matching, chat, and calls.",
+      "type": "object",
+      "properties": {
+        "blockerUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "blockedUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "blockedName": {
+          "type": "string",
+          "maxLength": 60
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["blockerUid", "blockedUid", "blockedName", "createdAt"]
+    },
+    "SafetyReport": {
+      "title": "SafetyReport",
+      "description": "Moderation report filed by a user against misuse.",
+      "type": "object",
+      "properties": {
+        "reporterUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "targetUid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "matchId": {
+          "type": "string",
+          "maxLength": 128
+        },
+        "reason": {
+          "type": "string",
+          "enum": ["harassment", "inappropriate_skill", "spam", "underage", "other"]
+        },
+        "details": {
+          "type": "string",
+          "maxLength": 800
+        },
+        "status": {
+          "type": "string",
+          "enum": ["open", "reviewed", "resolved"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["reporterUid", "targetUid", "matchId", "reason", "details", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/publicProfiles/{uid}": {
+      "schema": { "$ref": "#/entities/PublicProfile" },
+      "description": "Publicly visible non-PII user profiles."
+    },
+    "/privateUsers/{uid}": {
+      "schema": { "$ref": "#/entities/PrivateUser" },
+      "description": "Owner-only private user account metadata, email, and 18+/terms consent."
+    },
+    "/skills/{skillId}": {
+      "schema": { "$ref": "#/entities/SkillCatalogItem" },
+      "description": "Skill catalog readable by signed-in users and managed by admin."
+    },
+    "/userSkills/{userSkillId}": {
+      "schema": { "$ref": "#/entities/UserSkill" },
+      "description": "Individual mentor teaching offers and learner skill requests."
+    },
+    "/swipes/{swipeId}": {
+      "schema": { "$ref": "#/entities/Swipe" },
+      "description": "User swipe records keyed deterministically by actorUid_targetUid_skillId."
+    },
+    "/matches/{matchId}": {
+      "schema": { "$ref": "#/entities/Match" },
+      "description": "Canonical mutual skill matches keyed by minUid_maxUid_skillId."
+    },
+    "/matches/{matchId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "1:1 private chat messages restricted to active match participants."
+    },
+    "/calls/{callId}": {
+      "schema": { "$ref": "#/entities/VideoCall" },
+      "description": "1:1 WebRTC video call invitations and SDP state restricted to active match participants."
+    },
+    "/calls/{callId}/signals/{signalId}": {
+      "schema": { "$ref": "#/entities/CallSignal" },
+      "description": "ICE candidates exchanged during an active WebRTC call."
+    },
+    "/blocks/{blockId}": {
+      "schema": { "$ref": "#/entities/BlockRecord" },
+      "description": "Private block records keyed by blockerUid_blockedUid."
+    },
+    "/reports/{reportId}": {
+      "schema": { "$ref": "#/entities/SafetyReport" },
+      "description": "Moderation safety reports writable by reporters and readable by reporter or admin."
+    }
+  }
+}

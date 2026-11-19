@@ -1,0 +1,6 @@
+{
+  "name": "SkillSwipe",
+  "description": "Discover people who can teach you a skill. Swipe to express interest, match mutually, and learn together through private chat and 1:1 video calls.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
